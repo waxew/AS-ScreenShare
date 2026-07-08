@@ -1,4 +1,4 @@
-// Copyright 2024 The Chromium Authors
+// Copyright 2026 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,15 +6,34 @@ package org.jni_zero;
 
 import java.util.Collections;
 
-/** Used by jni_zero.cc. */
+/** Core APIs. */
 @JNINamespace("jni_zero")
-public class JniInit {
+public class JniZero {
+    private static ClassLoader sPendingJniClassLoader;
+    private static boolean sInitialized;
+
+    /** Sets the ClassLoader used to resolve classes by JNI Zero. */
+    public static void setJniClassLoader(ClassLoader classLoader) {
+        if (sInitialized) {
+            JniZeroJni.get().setJniClassLoader(classLoader);
+        } else {
+            sPendingJniClassLoader = classLoader;
+        }
+    }
+
     @CalledByNative
     private static Object[] init() {
+        sInitialized = true;
         // For JVM (works fine on ART), cannot call from Java -> Native during InitVM because the
         // System.loadLibrary() call has not yet completed. Could work around this by using
         // RegisterNatives(), but simpler to return an array than to make Java->Native work.
-        return new Object[] {Collections.EMPTY_LIST, Collections.EMPTY_MAP};
+        ClassLoader jniClassLoader = sPendingJniClassLoader;
+        if (jniClassLoader != null) {
+            sPendingJniClassLoader = null;
+        } else {
+            jniClassLoader = JniZero.class.getClassLoader();
+        }
+        return new Object[] {Collections.EMPTY_LIST, Collections.EMPTY_MAP, jniClassLoader};
     }
 
     @CalledByNative
@@ -45,5 +64,10 @@ public class JniInit {
             // since it's likely fine.
             assert false : "JNI multiplexing hash lookup failed with " + e.getMessage();
         }
+    }
+
+    @NativeMethods
+    interface Natives {
+        void setJniClassLoader(ClassLoader classLoader);
     }
 }

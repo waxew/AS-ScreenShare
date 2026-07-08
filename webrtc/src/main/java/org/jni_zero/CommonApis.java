@@ -1,15 +1,14 @@
-// Copyright 2024 The Chromium Authors
+// Copyright 2026 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 package org.jni_zero;
 
-import android.util.ArrayMap;
-
+import java.util.HashMap;
 import java.util.Map;
 
-/** Native helpers. */
-public class JniUtil {
+@JNINamespace("jni_zero")
+public class CommonApis {
     @CalledByNative
     private static Object[] mapToArray(Map<Object, Object> map) {
         Object[] ret = new Object[map.size() * 2];
@@ -24,7 +23,7 @@ public class JniUtil {
     @CalledByNative
     private static Map<Object, Object> arrayToMap(Object[] array) {
         int len = array.length;
-        Map<Object, Object> ret = new ArrayMap(len / 2);
+        Map<Object, Object> ret = new HashMap<>(len / 2);
         for (int i = 0; i < len; i += 2) {
             ret.put(array[i], array[i + 1]);
         }
